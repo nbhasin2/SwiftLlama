@@ -5,11 +5,10 @@ import PackageDescription
 let package = Package(
     name: "SwiftLlama",
     platforms: [
-        .macOS(.v15),
+        .macOS(.v12),
         .iOS(.v15),
-        .watchOS(.v11),
-        .tvOS(.v18),
-        .visionOS(.v2)
+        .watchOS(.v4),
+        .tvOS(.v14)
     ],
     products: [
         .library(name: "SwiftLlama", targets: ["SwiftLlama"]),
