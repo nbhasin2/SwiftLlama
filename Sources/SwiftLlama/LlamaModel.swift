@@ -80,12 +80,12 @@ class LlamaModel {
         temporaryInvalidCChars.append(contentsOf: newTokenCChars)
     
         let newTokenStr: String
-        if let validString = String(bytes: temporaryInvalidCChars, encoding: .utf8) {
+        if let validString: String = String(bytes: temporaryInvalidCChars, encoding: .utf8) {
             // Fully valid UTF-8 string
             newTokenStr = validString
             temporaryInvalidCChars.removeAll()
-        } else if let suffixIndex = temporaryInvalidCChars.firstIndex(where: { $0 != 0 }),
-                  let validSuffix = String(bytes: Array(temporaryInvalidCChars.suffix(from: suffixIndex)), encoding: .utf8) {
+        } else if let suffixIndex: Int = temporaryInvalidCChars.firstIndex(where: { $0 != 0 }),
+                  let validSuffix: String = String(bytes: Array(temporaryInvalidCChars.suffix(from: suffixIndex)), encoding: .utf8) {
             // Partially valid UTF-8 string, starting from the first valid byte
             newTokenStr = validSuffix
             temporaryInvalidCChars.removeAll()
