@@ -69,23 +69,29 @@ class LlamaModel {
 
     func `continue`() throws -> String {
         let newToken = llama_sampler_sample(sampler, context, batch.n_tokens - 1)
-    
+        
         if llama_token_is_eog(model, newToken) || generatedTokenAccount == n_len {
             temporaryInvalidCChars.removeAll()
             ended = true
             return ""
         }
-    
+        
         let newTokenCChars = tokenToCChars(token: newToken)
         temporaryInvalidCChars.append(contentsOf: newTokenCChars)
-    
+        
         let newTokenStr: String
-        if let validString: String = String(bytes: temporaryInvalidCChars, encoding: .utf8) {
+        if let validString = temporaryInvalidCChars.withUnsafeBufferPointer({ buffer -> String? in
+            guard let baseAddress = buffer.baseAddress else { return nil }
+            return NSString(bytes: baseAddress, length: buffer.count, encoding: String.Encoding.utf8.rawValue) as String?
+        }) {
             // Fully valid UTF-8 string
             newTokenStr = validString
             temporaryInvalidCChars.removeAll()
-        } else if let suffixIndex: Int = temporaryInvalidCChars.firstIndex(where: { $0 != 0 }),
-                  let validSuffix: String = String(bytes: Array(temporaryInvalidCChars.suffix(from: suffixIndex)), encoding: .utf8) {
+        } else if let suffixIndex = temporaryInvalidCChars.firstIndex(where: { $0 != 0 }),
+                  let validSuffix = temporaryInvalidCChars.suffix(from: suffixIndex).withUnsafeBufferPointer({ buffer -> String? in
+                      guard let baseAddress = buffer.baseAddress else { return nil }
+                      return NSString(bytes: baseAddress, length: buffer.count, encoding: String.Encoding.utf8.rawValue) as String?
+                  }) {
             // Partially valid UTF-8 string, starting from the first valid byte
             newTokenStr = validSuffix
             temporaryInvalidCChars.removeAll()
@@ -93,14 +99,15 @@ class LlamaModel {
             // No valid UTF-8 string could be constructed
             newTokenStr = ""
         }
-    
+        
         batch.clear()
         batch.add(token: newToken, position: generatedTokenAccount, seqIDs: [0], logit: true)
         generatedTokenAccount += 1
-    
+        
         if llama_decode(context, batch) != 0 {
             throw SwiftLlamaError.decodeError
         }
+        
         return newTokenStr
     }
 
