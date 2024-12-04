@@ -68,34 +68,36 @@ class LlamaModel {
     }
 
     func `continue`() throws -> String {
-        let newToken =  llama_sampler_sample(sampler, context, batch.n_tokens - 1)
-
+        let newToken = llama_sampler_sample(sampler, context, batch.n_tokens - 1)
+    
         if llama_token_is_eog(model, newToken) || generatedTokenAccount == n_len {
             temporaryInvalidCChars.removeAll()
             ended = true
             return ""
         }
-
-
+    
         let newTokenCChars = tokenToCChars(token: newToken)
         temporaryInvalidCChars.append(contentsOf: newTokenCChars)
-        
+    
         let newTokenStr: String
         if let validString = String(bytes: temporaryInvalidCChars, encoding: .utf8) {
+            // Fully valid UTF-8 string
             newTokenStr = validString
             temporaryInvalidCChars.removeAll()
         } else if let suffixIndex = temporaryInvalidCChars.firstIndex(where: { $0 != 0 }),
                   let validSuffix = String(bytes: Array(temporaryInvalidCChars.suffix(from: suffixIndex)), encoding: .utf8) {
+            // Partially valid UTF-8 string, starting from the first valid byte
             newTokenStr = validSuffix
             temporaryInvalidCChars.removeAll()
         } else {
+            // No valid UTF-8 string could be constructed
             newTokenStr = ""
         }
-
+    
         batch.clear()
         batch.add(token: newToken, position: generatedTokenAccount, seqIDs: [0], logit: true)
         generatedTokenAccount += 1
-
+    
         if llama_decode(context, batch) != 0 {
             throw SwiftLlamaError.decodeError
         }
