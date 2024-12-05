@@ -5,8 +5,8 @@
         "package": "llama",
         "repositoryURL": "https://github.com/nbhasin2/llama.cpp.git",
         "state": {
-          "branch": "main",
-          "revision": "59f4db10883a4f3e855cffbf2c3ab68430e95272",
+          "branch": null,
+          "revision": "df334a11251b81fd0b6a0e51e7146e0ba9e973f2",
           "version": null
         }
       }
